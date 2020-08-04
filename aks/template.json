@@ -116,7 +116,7 @@
                         {
                             "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
                             "apiVersion": "2017-05-01",
-                            "name": "[concat(parameters('vnetName'), '/', parameters('subnetName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'aksvnetaccesscluster'))]",
+                            "name": "[concat(parameters('vnetName'), '/', parameters('subnetName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'akstovnet'))]",
                             "properties": {
                                 "roleDefinitionId": "[variables('networkContributorRole')]",
                                 "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters/', parameters('clusterName')), '2020-06-01', 'Full').identity.principalId]",

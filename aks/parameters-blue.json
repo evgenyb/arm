@@ -21,10 +21,10 @@
             "value": "iac-aks-blue-rg"
         },
         "tenantId": {
-            "value": "faf31a1e-aec7-44a8-ae80-843057f39cca"
+            "value": "<YOUR-TENANT-ID>"
         },
         "adminGroupObjectId": {
-            "value": "4f2a7d8a-3699-4e15-bfbd-50d00bdc938e"
+            "value": "<GUID>"
         }
     }
 }
