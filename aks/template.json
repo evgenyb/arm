@@ -1,0 +1,132 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterName": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "egressIpName": {
+            "type": "string"
+        },
+        "tenantId": {
+            "type": "string"
+        },
+        "adminGroupObjectId": {
+            "type": "string"
+        },
+        "resourceGroupName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]",
+        "networkContributorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '4d97b98b-1d4f-4787-a291-c67834d212e7')]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('egressIpName')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-04-01",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },        
+        {
+            "name": "[parameters('clusterName')]",
+            "type": "Microsoft.ContainerService/managedClusters",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('egressIpName'))]"
+            ],
+            "properties": {
+                "kubernetesVersion": "1.17.7",
+                "enableRBAC": true,
+                "dnsPrefix": "[concat(parameters('clusterName'), '-dns')]",
+                "agentPoolProfiles": [
+                    {
+                        "name": "agentpool",
+                        "count": 1,
+                        "vmSize": "Standard_DS2_v2",
+                        "osDiskSizeGB": 128,
+                        "type": "VirtualMachineScaleSets",
+                        "osType": "Linux",
+                        "mode": "System",
+                        "storageProfile": "ManagedDisks",
+                        "vnetSubnetID": "[variables('subnetId')]"
+                    }
+                ],                
+                "servicePrincipalProfile": {
+                     "clientId": "msi"
+                },
+                "networkProfile": {
+                    "networkPlugin": "azure",
+                    "networkPolicy": "calico",
+                    "loadBalancerSku": "Standard",
+                    "serviceCidr": "10.0.0.0/16",
+                    "dnsServiceIP": "10.0.0.10",
+                    "dockerBridgeCidr": "172.17.0.1/16",
+                    "outboundType": "loadBalancer",
+                    "loadBalancerProfile": {
+                        "outboundIPs": {
+                            "publicIPs": [
+                                {
+                                    "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('egressIpName'))]"
+                                }
+                            ]
+                        }
+                    }                    
+                },
+                "aadProfile": {
+                    "managed": true,
+                    "tenantId": "[parameters('tenantId')]",
+                    "adminGroupObjectIDs": [
+                        "[parameters('adminGroupObjectId')]"
+                    ]
+                }
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "ClusterSubnetRoleAssignmentDeployment",
+            "apiVersion": "2017-05-10",
+            "resourceGroup": "[parameters('resourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[concat(parameters('vnetName'), '/', parameters('subnetName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'aksvnetaccesscluster'))]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('networkContributorRole')]",
+                                "principalId": "[reference(resourceId('Microsoft.ContainerService/managedClusters/', parameters('clusterName')), '2020-06-01', 'Full').identity.principalId]",
+                                "scope": "[variables('subnetId')]"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

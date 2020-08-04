@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "northeurope"
+        },
+        "clusterName": {
+            "value": "iac-green-aks"
+        },
+        "vnetName": {
+            "value": "iac-aks-green-vnet"
+        },
+        "subnetName": {
+            "value": "aks-net"
+        },
+        "egressIpName": {
+            "value": "iac-aks-green-egrees-pip"
+        },
+        "resourceGroupName": {
+            "value": "iac-aks-green-rg"
+        },
+        "tenantId": {
+            "value": "faf31a1e-aec7-44a8-ae80-843057f39cca"
+        },
+        "adminGroupObjectId": {
+            "value": "4f2a7d8a-3699-4e15-bfbd-50d00bdc938e"
+        }
+    }
+}
